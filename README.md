@@ -1,20 +1,119 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 📰 新华洞察 (Xinhua Insight) v1.0
 
-# Run and deploy your AI Studio app
+> **读懂字里行间的焦虑 | Decoding Bureaucratic Formalism**
 
-This contains everything you need to run your app locally.
+[![English](https://img.shields.io/badge/docs-English-lightgrey.svg)](README_EN.md)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Tech](https://img.shields.io/badge/stack-React_19_·_Vite_·_Tailwind-38bdf8)
+![Privacy](https://img.shields.io/badge/privacy-Local_Storage_Only-green)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1VSfFrBdNQVUNHAEpYly17rDfspZTmKnZ
+**新华洞察 (Xinhua Insight)** 是一个**纯前端**的新闻情报仪表盘。它旨在剥离官方通稿中“正能量”的形容词，通过词频统计和 AI 深度推理，还原政策、经济与社会管控背后的底层逻辑。
 
-## Run Locally
+这是一个**去中心化**的分析工具，没有后端服务器，数据掌握在你手中。
 
-**Prerequisites:**  Node.js
+---
 
+## 🛠 技术原理与采集逻辑 (Technical Deep Dive)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+本项目采用 **"Client-Side Only" (纯客户端)** 架构，所有的数据抓取、清洗、存储和分析均在用户的浏览器中完成。
+
+### 1. 🔍 数据采集 (The Crawler)
+由于浏览器同源策略 (SOP) 的限制，直接访问新闻网站会被拦截。我们采用了以下方案：
+*   **目标源**: `https://m.news.cn/` (新华网移动端，结构更轻量，时政新闻更集中)。
+*   **CORS 代理**: 使用 `AllOrigins` 或类似的公共代理服务绕过跨域限制。
+    ```javascript
+    // 伪代码示例
+    const proxy = 'https://api.allorigins.win/raw?url=';
+    const target = 'https://m.news.cn/';
+    fetch(proxy + target);
+    ```
+*   **编码处理**: 手动处理 `ArrayBuffer` 并使用 `TextDecoder('utf-8')` 解码，防止乱码。
+
+### 2. 🧹 数据清洗与解析
+*   **DOM 解析**: 利用浏览器原生的 `DOMParser` 将抓取到的 HTML 字符串转换为文档对象。
+*   **选择器策略**: 针对性提取 `.headline`, `.swiper-slide`, `.list li` 等核心新闻区域。
+*   **日期提取**: 并不依赖网页显示的日期，而是通过正则表达式从 URL 结构 (如 `/2024-03/15/`) 中提取发布日期，确保时间准确。
+
+### 3. 📊 本地词频统计
+*   **分词算法**: 前端内置轻量级中文分词逻辑（基于 N-gram 和停用词库）。
+*   **去噪**: 自动剔除“加强”、“推进”、“重要”、“坚持”等无实际信息量的“八股文虚词”，只保留“安全”、“风险”、“斗争”等具有实指意义的名词。
+
+### 4. 🤖 AI 增强分析
+*   **提示词工程 (Prompt Engineering)**: 内置四套精心设计的 System Prompts（如“润学生存指南”、“宏观空头”等）。
+*   **BYOK 模式**: 支持用户填入自己的 OpenAI/DeepSeek Key 或连接本地 Ollama 模型，AI 交互直接发生在用户浏览器与模型供应商之间。
+
+---
+
+## ✨ 核心功能
+
+### 🤖 多视角 AI 解码 (Persona Analysis)
+我们不制造新闻摘要，我们提供**解读**。不同的 AI 人格戴着不同的有色眼镜：
+
+| 视角 | 核心逻辑与关注点 |
+|------|------------------|
+| 🗣️ **大白话 (推荐)** | **真话翻译机**。拒绝谜语人，将“逆周期调节”翻译为“央行放水”，将“财政紧平衡”翻译为“政府没钱了”。直接给出普通家庭的生存建议。 |
+| 🏃‍♂️ **现实生存 (润学)** | **焦虑预警机**。关注人身自由、边境管控、物资短缺和社会治安铁拳。核心建议通常涉及：跑路、囤货、低调。 |
+| 📉 **防御性理财 (空头)** | **悲观经济学家**。无视 GDP 增长率，只看地方债雷爆、税收倒查和汇率贬值风险。核心建议：现金为王，换汇，不买房。 |
+| 🕵️ **中南海听床 (政治)** | **政治观察家**。通过分析“谁出席了会议”、“谁缺席了”、“提法有什么微小变化”来推断权力斗争和路线清洗。 |
+
+### 🔒 隐私至上
+*   **零数据库**: 所有抓取的文章、分析报告、API Key 仅存储在浏览器的 `localStorage` 中。
+*   **清除缓存**: 清除浏览器缓存即销毁所有数据。
+
+---
+
+## 🚀 快速开始
+
+### 环境要求
+*   Node.js (v18+)
+*   一个 API Key (OpenAI, DeepSeek) 或者本地运行的 Ollama。
+
+### 安装步骤
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/yourusername/xinhua-insight.git
+cd xinhua-insight
+
+# 2. 安装依赖
+npm install
+
+# 3. 启动开发服务器
+npm run dev
+```
+
+浏览器访问 `http://localhost:3000` 即可使用。
+
+---
+
+## ⚙️ 配置指南
+
+点击右上角的 **设置 (⚙️)** 图标。
+
+### 方案 A: 云端模型 (OpenAI / DeepSeek)
+1. 选择供应商: `OpenAI` 或 `DeepSeek`。
+2. 输入 **API Key**。
+3. 输入 **Model ID** (推荐 `gpt-4o` 或 `deepseek-chat`)。
+4. 点击 **测试连接**。
+
+### 方案 B: 本地隐私模型 (Ollama)
+1. 确保本地安装并运行了 Ollama (`ollama serve`)。
+2. 选择供应商: `Local Ollama`。
+3. Base URL: 默认为 `http://localhost:11434`。
+4. Model ID: 输入你本地的模型名 (如 `llama3`, `qwen`)。
+5. **注意**: 此时你拥有完全的数据主权，没有任何数据流出你的电脑。
+
+---
+
+## ⚠️ 免责声明
+
+本项目仅供**教育和研究使用**。
+1.  **数据来源**: 所有数据均来自公开的新闻网站。
+2.  **AI 解读**: AI 生成的观点基于特定的“提示词工程”逻辑，带有明显的主观预设（如批判性视角），**不代表**开发者的政治立场，也**不构成**任何投资或法律建议。
+3.  请遵守当地法律法规使用互联网服务。
+
+---
+
+<p align="center">
+  Made with ❤️ by the Xinhua Insight Team
+</p>
