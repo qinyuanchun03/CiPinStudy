@@ -1,0 +1,5 @@
+{
+  "name": "Xinhua Insight",
+  "description": "A modern political news analysis dashboard for Xinhua Net, featuring local word frequency statistics and deep LLM-powered sentiment analysis.",
+  "requestFramePermissions": []
+}

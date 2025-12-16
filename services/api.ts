@@ -1,0 +1,360 @@
+import { DashboardData, AIReport, ConfigStatus, APIConfig, ModelValidationResponse, PersonaId, BasicData, Article, WordStat } from '../types';
+
+const LS_CONFIG_KEY = 'xinhua_insight_api_config';
+const LS_DATA_KEY = 'xinhua_insight_local_data';
+
+// Xinhua Net Mobile (UTF-8 encoded)
+const TARGET_URL = 'https://m.news.cn/';
+// CORS Proxy to bypass browser restrictions
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+// --- Local Configuration Management ---
+
+const getStoredConfig = (): APIConfig | null => {
+  const stored = localStorage.getItem(LS_CONFIG_KEY);
+  return stored ? JSON.parse(stored) : null;
+};
+
+const saveStoredConfig = (config: APIConfig) => {
+  localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(config));
+};
+
+// --- Local Data Management (The Browser is now the Database) ---
+
+const getStoredData = (): DashboardData | null => {
+  const stored = localStorage.getItem(LS_DATA_KEY);
+  return stored ? JSON.parse(stored) : null;
+};
+
+const saveStoredData = (data: DashboardData) => {
+  localStorage.setItem(LS_DATA_KEY, JSON.stringify(data));
+};
+
+// --- Helper for Dates ---
+const getTodayDate = () => {
+  return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+};
+
+// --- Client-Side Analysis Helpers ---
+
+const extractKeywords = (titles: string[]): WordStat[] => {
+  const stopWords = new Set(['中国', '工作', '强调', '指出', '会议', '活动', '关于', '进行', '加强', '推进', '发展', '人民', '重要', '精神', '甚至', '为了', '学习', '全面', '贯彻', '落实', '深入', '坚持']);
+  const frequency: Record<string, number> = {};
+
+  titles.forEach(title => {
+    // Remove non-chinese characters
+    const cleanLine = title.replace(/[^\u4e00-\u9fa5]/g, '');
+    for (let i = 0; i < cleanLine.length - 1; i++) {
+      const word = cleanLine.substring(i, i + 2);
+      if (stopWords.has(word)) continue;
+      
+      frequency[word] = (frequency[word] || 0) + 1;
+    }
+    // Also try 3-grams
+    for (let i = 0; i < cleanLine.length - 2; i++) {
+        const word = cleanLine.substring(i, i + 3);
+        if (frequency[word.substring(0,2)] > 1) {
+             frequency[word] = (frequency[word] || 0) + 2; 
+        }
+    }
+  });
+
+  return Object.entries(frequency)
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15);
+};
+
+// --- Prompts ---
+
+const SYSTEM_PROMPT_BASE = `
+Role: You are a "Deep Logic Decoder" for Chinese political news. You do NOT trust the surface meaning of official "Baguwen" (bureaucratic formalism).
+Core Logic: "What is emphasized is what is lacking. What is repressed is what is feared."
+Task: Analyze the Xinhua Net headlines to find the *real* government intent and hidden crises.
+Methodology:
+1. Strip away "positive energy" adjectives.
+2. Link high-frequency keywords (e.g., "Security", "Struggle", "Stability") to specific underlying threats (e.g., economic collapse, social unrest, war preparation).
+3. The "Strategic Advice" must be cynical, realistic, and actionable for an individual trying to survive or profit in this environment.
+
+Output: Strict JSON format only. No Markdown.
+JSON Structure:
+{
+  "period_summary": "A concise, brutal summary of what the government is actually worrying about this week.",
+  "top_keywords": [{"word": "keyword", "weight": 90, "sentiment": "positive/neutral/negative"}],
+  "core_topics": [{"topic_name": "Topic", "summary": "The official narrative vs. the hidden reality."}],
+  "policy_signal": "Prediction of the next crackdown or policy shift based on tone intensity.",
+  "strategic_advice": {
+    "title": "Short, Punchy Advice",
+    "content": "Specific action: Buy/Sell/Hoard/Run/Lay low. No vague platitudes.",
+    "risk_level": "High/Medium/Low"
+  }
+}
+Force Simplified Chinese output for all values.
+`;
+
+const PERSONA_INSTRUCTIONS: Record<PersonaId, string> = {
+  youtuber: `
+    Perspective: "Modern Survivalist & Runxue (润学) Practitioner".
+    Focus: Physical safety, border controls, social instability, and wealth confiscation risks.
+    Tone: Alarmist but practical. Cynical.
+    Decoding Guide:
+    - "Social Stability" -> Prepare for increased surveillance and crackdowns.
+    - "Food Security" -> Hoard non-perishables; supply chains may break.
+    - "National Security" -> Passport controls might tighten; foreign exchange constraints.
+    - Advice Focus: Protecting yourself and your family from the "Iron Fist".
+  `,
+  economist: `
+    Perspective: "Bear Market Macro-Strategist".
+    Focus: Liquidity traps, local debt crises, tax enforcement, and capital flight.
+    Tone: Cold, calculating, data-driven skepticism.
+    Decoding Guide:
+    - "High-Quality Development" -> The old growth model is dead; expect stagnation.
+    - "Financial Risk Prevention" -> Small banks may fail; move cash to big 4 banks or hard assets.
+    - "Common Prosperity" -> Tax audits on the wealthy/middle class are coming.
+    - Advice Focus: Asset preservation, currency hedging, avoiding sectors in the crosshairs.
+  `,
+  observer: `
+    Perspective: "Kremlinology / Zhongnanhai Watcher".
+    Focus: Power struggles, personnel changes, ideological purification, and mobilization for conflict.
+    Tone: Analytical, historical, reading between the lines.
+    Decoding Guide:
+    - Who is speaking? Who is missing from the headlines? (Absence is a signal).
+    - "Political Stance" -> Loyalty purges are active.
+    - "Struggle (斗争)" -> Preparation for external conflict or internal purge.
+    - Advice Focus: Understanding the political wind direction to avoid standing on the wrong side.
+  `,
+  plain_spoken: `
+    Perspective: "The Truth-Telling Neighbor (Big Vernacular)".
+    Focus: Synthesizing Economics, Politics, and Survival into simple terms for the average citizen.
+    Tone: "Speak Human Language" (说人话). Down-to-earth, slang-heavy, direct, slightly humorous but deadly serious about risks.
+    Decoding Guide:
+    - Translate "Fiscal Policy" to "The government is running out of money, watch your wallet."
+    - Translate "Security" to "Don't go out at night, don't talk online."
+    - Summarize complex risks into: "Save money," "Buy gold," "Don't buy a house," "Prepare for hard times."
+    - Advice Focus: Simple, actionable steps for a common family to survive the coming storm.
+  `
+};
+
+// --- Helpers ---
+
+const cleanJson = (text: string): string => {
+  let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end !== -1) {
+    cleaned = cleaned.substring(start, end + 1);
+  }
+  return cleaned;
+};
+
+// --- API Implementation ---
+
+export const api = {
+  getLatestData: async (): Promise<DashboardData | null> => {
+    // 1. Try to get from LocalStorage
+    const localData = getStoredData();
+    if (localData) {
+        return localData;
+    }
+    // 2. If nothing in local, return null to prompt the UI to "Crawl"
+    return null; 
+  },
+
+  crawlNews: async (params?: { limit_hours?: number }): Promise<boolean> => {
+    try {
+      console.log(`Starting client-side crawl of ${TARGET_URL}...`);
+      
+      const response = await fetch(`${CORS_PROXY}${encodeURIComponent(TARGET_URL)}&t=${new Date().getTime()}`);
+      if (!response.ok) throw new Error("Proxy response failed");
+
+      const buffer = await response.arrayBuffer();
+      const decoder = new TextDecoder('utf-8'); 
+      const htmlText = decoder.decode(buffer);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+
+      const extractedArticles: Article[] = [];
+      const selectors = '.headline a, .swiper-slide .tit a, .list li a, .products li a';
+      const linkElements = Array.from(doc.querySelectorAll(selectors));
+
+      const today = getTodayDate();
+
+      linkElements.forEach((el) => {
+         const title = el.textContent?.trim();
+         const href = el.getAttribute('href');
+         
+         if (title && title.length > 6 && href && !href.includes('javascript:')) {
+             let fullUrl = href;
+             if (!href.startsWith('http')) {
+                 try {
+                     fullUrl = new URL(href, TARGET_URL).href;
+                 } catch (e) {
+                     return;
+                 }
+             }
+
+             // Attempt to extract date from URL 
+             let date = today; // Default to today if finding date fails
+             
+             let dateMatch = fullUrl.match(/\/(\d{4})(\d{2})(\d{2})\//);
+             if (!dateMatch) {
+                dateMatch = fullUrl.match(/\/(\d{4})\/(\d{2})(\d{2})\//);
+             }
+
+             if (dateMatch) {
+                 date = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+             }
+
+             extractedArticles.push({
+                 title,
+                 url: fullUrl,
+                 date: date
+             });
+         }
+      });
+
+      const uniqueArticles = Array.from(new Map(extractedArticles.map(item => [item.title, item])).values());
+      
+      if (uniqueArticles.length === 0) {
+          throw new Error("No articles found in parsed HTML");
+      }
+
+      // Sort by date descending
+      uniqueArticles.sort((a, b) => b.date.localeCompare(a.date));
+
+      const topKeywords = extractKeywords(uniqueArticles.map(a => a.title));
+      
+      const newData: DashboardData = {
+          stats: {
+              date: getTodayDate(),
+              total_articles: uniqueArticles.length,
+              last_updated: new Date().toLocaleTimeString(),
+              top_keywords: topKeywords
+          },
+          articles: uniqueArticles.slice(0, 50) 
+      };
+
+      saveStoredData(newData);
+      return true;
+
+    } catch (e) {
+      console.warn("Client-side crawl failed:", e);
+      return false;
+    }
+  },
+
+  getConfigStatus: async (): Promise<ConfigStatus> => {
+    const stored = getStoredConfig();
+    if (stored && stored.apiKey) {
+      return { configured: true, provider: stored.provider, modelId: stored.modelId };
+    }
+    return { configured: false };
+  },
+
+  validateConfig: async (config: { provider: string, apiKey: string, baseUrl?: string, modelId?: string }): Promise<ModelValidationResponse> => {
+    try {
+      const isOllama = config.provider === 'ollama';
+      let url = config.baseUrl;
+      if (!url) {
+        if (config.provider === 'openai') url = 'https://api.openai.com/v1';
+        if (config.provider === 'deepseek') url = 'https://api.deepseek.com';
+        if (isOllama) url = 'http://localhost:11434/v1';
+      }
+      
+      url = url?.replace(/\/+$/, '');
+
+      const payload = {
+        model: config.modelId,
+        messages: [
+          { role: "user", content: "Say 'Hello' in lower case." }
+        ],
+        max_tokens: 10
+      };
+
+      const res = await fetch(`${url}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Provider Error (${res.status}): ${errText}`);
+      }
+
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content || "";
+
+      return { valid: true, models: [config.modelId || 'default'], message: "Connection Successful!", test_response: content };
+
+    } catch (e: any) {
+      console.error("Validation Error:", e);
+      return { valid: false, models: [], message: e.message || "Connection Failed" };
+    }
+  },
+
+  updateConfig: async (config: APIConfig): Promise<boolean> => {
+    try {
+      saveStoredConfig(config);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  analyzeAI: async (personaId: PersonaId, articles: Article[]): Promise<AIReport> => {
+    const config = getStoredConfig();
+    if (!config) throw new Error("Configuration missing.");
+
+    // Truncate to save tokens (Use first 25 titles)
+    const recentArticles = articles.slice(0, 25).map(a => `- ${a.title}`).join('\n');
+    const userPrompt = `Here are the latest news titles from Xinhua Net:\n${recentArticles}`;
+    
+    const isOllama = config.provider === 'ollama';
+    let url = config.baseUrl;
+    if (!url) {
+      if (config.provider === 'openai') url = 'https://api.openai.com/v1';
+      if (config.provider === 'deepseek') url = 'https://api.deepseek.com';
+      if (isOllama) url = 'http://localhost:11434/v1';
+    }
+    url = url?.replace(/\/+$/, '');
+
+    try {
+      const res = await fetch(`${url}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`
+        },
+        body: JSON.stringify({
+          model: config.modelId,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT_BASE + "\n" + PERSONA_INSTRUCTIONS[personaId] },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: 0.7,
+          response_format: { type: "json_object" }
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      const rawContent = data.choices?.[0]?.message?.content;
+      
+      if (!rawContent) throw new Error("Empty response from AI");
+
+      const cleanedJson = cleanJson(rawContent);
+      return JSON.parse(cleanedJson);
+
+    } catch (e: any) {
+      console.error("AI Generation Error:", e);
+      throw new Error("Failed to generate report: " + e.message);
+    }
+  }
+};
