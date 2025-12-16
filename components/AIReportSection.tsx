@@ -1,6 +1,6 @@
 import React from 'react';
 import { AIReport, PersonaId } from '../types';
-import { Brain, TrendingUp, MessageSquare, Target, Lightbulb, ShieldAlert, LineChart, BookOpen, MessageCircle } from 'lucide-react';
+import { Brain, TrendingUp, MessageSquare, Target, Lightbulb, ShieldAlert, LineChart, BookOpen, MessageCircle, GraduationCap } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface AIReportSectionProps {
@@ -49,6 +49,15 @@ export const AIReportSection: React.FC<AIReportSectionProps> = ({ report, person
           textColor: 'text-purple-900',
           icon: <BookOpen size={24} />,
           badge: 'bg-purple-100 text-purple-700'
+        };
+      case 'exam_prep':
+        return {
+          bg: 'bg-teal-50',
+          border: 'border-teal-200',
+          iconColor: 'text-teal-600',
+          textColor: 'text-teal-900',
+          icon: <GraduationCap size={24} />,
+          badge: 'bg-teal-100 text-teal-700'
         };
       default:
         return {

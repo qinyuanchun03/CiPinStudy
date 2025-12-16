@@ -53,6 +53,8 @@ const translations: Record<Language, Translations> = {
     persona_observer_desc: "Decode power struggles. Focus on personnel purges and ideological mobilization.",
     persona_plain_spoken: "Plain Spoken (Simple)",
     persona_plain_spoken_desc: "Translates expert jargon into plain language. Tells you exactly what to do at home.",
+    persona_exam_prep: "Exam Prep (Civil Service)",
+    persona_exam_prep_desc: "Extracts exam points and essay materials. Analyzes hiring trends based on policy focus.",
     recommended: "Recommended"
   },
   zh: {
@@ -104,6 +106,8 @@ const translations: Record<Language, Translations> = {
     persona_observer_desc: "通过“谁出席、谁缺席、提法变动”分析权力斗争与路线清洗。",
     persona_plain_spoken: "大白话 (通俗)",
     persona_plain_spoken_desc: "拒绝谜语人。将专家黑话翻译成人话，直接告诉你现在该存钱还是该跑路。",
+    persona_exam_prep: "考公考研 (上岸)",
+    persona_exam_prep_desc: "提炼申论素材与政治考点。分析哪些部门在扩权招人，哪些行业适合避雷。",
     recommended: "推荐：通俗易懂"
   },
   jp: {
@@ -155,6 +159,8 @@ const translations: Record<Language, Translations> = {
     persona_observer_desc: "権力闘争を解読。人事粛清とイデオロギー動員に焦点を当てる。",
     persona_plain_spoken: "平易な言葉 (通訳)",
     persona_plain_spoken_desc: "専門用語を排除。結局何をすべきか（貯金、逃走、隠れる）を明確に伝えます。",
+    persona_exam_prep: "公務員・大学院試験",
+    persona_exam_prep_desc: "試験の重要ポイントと小論文の素材を抽出。政策の重点から採用トレンドを分析。",
     recommended: "推奨：わかりやすい"
   }
 };

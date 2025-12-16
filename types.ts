@@ -62,7 +62,7 @@ export interface ConfigStatus {
 }
 
 export type Language = 'en' | 'zh' | 'jp';
-export type PersonaId = 'youtuber' | 'economist' | 'observer' | 'plain_spoken';
+export type PersonaId = 'youtuber' | 'economist' | 'observer' | 'plain_spoken' | 'exam_prep';
 
 export interface ModelValidationResponse {
   valid: boolean;

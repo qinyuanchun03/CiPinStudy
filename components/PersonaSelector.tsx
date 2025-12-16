@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, BarChart4, Search, MessageCircle } from 'lucide-react';
+import { Mic, BarChart4, Search, MessageCircle, GraduationCap } from 'lucide-react';
 import { PersonaId } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -41,6 +41,13 @@ export const PersonaSelector: React.FC<PersonaSelectorProps> = ({ selected, onSe
       descKey: 'persona_observer_desc',
       color: 'border-purple-500 bg-purple-50 text-purple-700'
     },
+    { 
+      id: 'exam_prep', 
+      icon: <GraduationCap size={24} />, 
+      labelKey: 'persona_exam_prep', 
+      descKey: 'persona_exam_prep_desc',
+      color: 'border-teal-500 bg-teal-50 text-teal-700'
+    },
   ];
 
   return (
@@ -48,7 +55,7 @@ export const PersonaSelector: React.FC<PersonaSelectorProps> = ({ selected, onSe
       <h3 className="text-center text-slate-500 text-sm font-semibold uppercase tracking-wider mb-4">
         {t('select_perspective')}
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {personas.map((p) => {
           const isSelected = selected === p.id;
           const isRecommended = p.id === 'plain_spoken';

@@ -45,6 +45,7 @@ We don't just summarize; we **interpret** through distinct personas:
 | 🏃‍♂️ **Survivalist (Runxue)** | **The Alarmist.** Focuses on physical safety, border controls, supply chain shortages, and "Iron Fist" avoidance. |
 | 📉 **Bear Economist** | **The Skeptic.** Looks past GDP growth to see local debt crises, tax enforcement risks, and currency devaluation. |
 | 🕵️ **Political Observer** | **The Insider.** Analyzes personnel changes, meetings attended/absent, and ideological signaling (Zhongnanhai Watcher). |
+| 🎓 **Exam Prep (Civil Service)** | **The Standard Answer.** Treats news as essay material and exam points. Analyzes hiring trends based on department power shifts. |
 
 ### 🔒 Privacy First
 - **Zero Database**: All crawled data and API keys are stored in your browser's `LocalStorage`.
@@ -80,18 +81,25 @@ The app will launch at `http://localhost:3000`.
 
 Click the **Settings (⚙️)** icon in the top right corner.
 
-### Option A: Cloud Providers (OpenAI / DeepSeek)
-1. Select **Provider**: `OpenAI` or `DeepSeek`.
-2. Enter your **API Key**.
-3. Enter the **Model ID** (e.g., `gpt-4o`, `deepseek-chat`).
-4. Click **Test Connection**.
+### 🔌 Scenario 1: Official Providers (Standard)
+Directly connect to OpenAI or DeepSeek.
+1. **Provider**: Select `OpenAI` or `DeepSeek`.
+2. **API Key**: Enter your `sk-...` key.
+3. **Model ID**: Enter the model name (e.g., `gpt-4o`, `deepseek-chat`).
 
-### Option B: Local Privacy (Ollama)
+### 🔌 Scenario 2: OpenAI-Compatible APIs (Custom)
+For **Moonshot**, **Groq**, **OneAPI**, or other aggregators:
+1. **Provider**: Select `OpenAI`.
+2. **Base URL**: Change to your provider's API endpoint (e.g., `https://api.moonshot.cn/v1`).
+3. **API Key**: Enter the provider's key.
+4. **Model ID**: Enter the supported model ID.
+
+### 🏠 Scenario 3: Local Privacy (Ollama)
+Run offline with zero data leakage.
 1. Ensure Ollama is running (`ollama serve`).
-2. Select **Provider**: `Local Ollama`.
-3. Base URL: `http://localhost:11434` (Default).
-4. Model ID: `llama3`, `mistral`, or `qwen`.
-5. **Note**: You may need to configure Ollama to allow CORS if accessing from a different host.
+2. **Provider**: Select `Local Ollama`.
+3. **Base URL**: Default is `http://localhost:11434`.
+4. **Model ID**: Enter your local model (e.g., `llama3`).
 
 ---
 
