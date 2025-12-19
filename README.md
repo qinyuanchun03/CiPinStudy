@@ -12,6 +12,17 @@
 
 ---
 
+## 🚀 一键部署 (One-Click Deploy)
+
+无需复杂的开发环境配置，点击下方按钮即可将本项目部署至您的私有云端：
+
+| 平台 | 部署链接 |
+| :--- | :--- |
+| **Vercel** | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/qinyuanchun03/CiPinStudy) |
+| **Netlify** | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/qinyuanchun03/CiPinStudy) |
+
+---
+
 ## 🚀 v1.2 重大更新：全视角逻辑进化
 
 ### 1. 🧠 理论底座升级
