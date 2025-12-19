@@ -23,11 +23,6 @@ export interface DashboardData {
   articles: Article[];
 }
 
-export interface AIAnalysisTopic {
-  topic_name: string;
-  summary: string;
-}
-
 export interface AIAnalysisKeyword {
   word: string;
   weight: number;
@@ -40,12 +35,52 @@ export interface StrategicAdvice {
   risk_level: 'High' | 'Medium' | 'Low';
 }
 
+// New 5-Section Structure Types
+
+export interface GeneralAnalysis {
+  summary: string;
+  keywords: AIAnalysisKeyword[];
+}
+
+export interface AvoidanceZone {
+  title: string;
+  items: string[];
+}
+
 export interface AIReport {
-  period_summary: string;
-  top_keywords: AIAnalysisKeyword[];
-  core_topics: AIAnalysisTopic[];
-  policy_signal: string;
-  strategic_advice: StrategicAdvice;
+  // 1. General Analysis (总体分析) - includes Visual Keywords
+  general_analysis: GeneralAnalysis;
+  // 2. Situation Assessment (形势研判)
+  situation_assessment: string;
+  // 3. Real Intent (真实意图)
+  real_intent: string;
+  // 4. Avoidance Zone (避雷专区)
+  avoidance_zone: AvoidanceZone;
+  // 5. Action Suggestions (行动建议)
+  action_suggestions: StrategicAdvice;
+
+  // Legacy properties for backward compatibility
+  period_summary?: string;
+  top_keywords?: AIAnalysisKeyword[];
+  policy_signal?: string;
+  core_topics?: { topic_name: string; summary: string }[];
+  strategic_advice?: StrategicAdvice;
+}
+
+export interface DeepReport {
+  surface_meaning: string;
+  deep_logic: string;
+  impact_assessment: string;
+  key_segments: string[]; // Specific quotes from text that are important
+  bias_check: string; // Tone analysis
+}
+
+export interface SavedReport {
+  id: string;
+  article: Article;
+  report: DeepReport;
+  timestamp: number;
+  persona: PersonaId;
 }
 
 export interface APIConfig {

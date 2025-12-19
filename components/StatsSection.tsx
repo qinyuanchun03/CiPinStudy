@@ -10,8 +10,14 @@ interface StatsSectionProps {
 
 export const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
   const { t } = useLanguage();
-  // Sort data just in case, take top 10 for chart
-  const chartData = [...data.top_keywords].sort((a, b) => b.count - a.count).slice(0, 15);
+  
+  // Prepare data for vertical chart (Leaderboard style)
+  // 1. Sort descending to get the actual Top 15 highest frequency words.
+  // 2. Sort ascending [Small...Big] so the biggest bar appears at the TOP of the Y-Axis (since Recharts renders index 0 at bottom).
+  const chartData = [...data.top_keywords]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15)
+    .sort((a, b) => a.count - b.count);
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -57,18 +63,25 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
           <p className="text-slate-500 text-sm">{t('chart_subtitle')}</p>
         </div>
         
-        <div className="h-[300px] w-full">
+        <div className="h-[500px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+            <BarChart 
+              layout="vertical"
+              data={chartData} 
+              margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#e2e8f0" />
               <XAxis 
-                dataKey="word" 
+                type="number" 
                 tick={{ fill: '#64748b', fontSize: 12 }} 
                 axisLine={false} 
                 tickLine={false}
               />
               <YAxis 
-                tick={{ fill: '#64748b', fontSize: 12 }} 
+                dataKey="word" 
+                type="category" 
+                width={80}
+                tick={{ fill: '#64748b', fontSize: 13, fontWeight: 500 }} 
                 axisLine={false} 
                 tickLine={false}
               />
@@ -76,9 +89,13 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
                 cursor={{ fill: '#f1f5f9' }}
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
               />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={index < 3 ? '#4f46e5' : '#818cf8'} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    // Highlight top 3 (which are at the end of the array due to ascending sort)
+                    fill={index >= chartData.length - 3 ? '#4f46e5' : '#818cf8'} 
+                  />
                 ))}
               </Bar>
             </BarChart>

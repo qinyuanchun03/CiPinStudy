@@ -1,13 +1,13 @@
 # 📰 Xinhua Insight (新华洞察) v1.0
 
-> **Decoding the "Baguwen" (Bureaucratic Formalism) | 读懂字里行间的焦虑**
+> **Decoding News Trends | 读懂字里行间的趋势**
 
 [![Chinese](https://img.shields.io/badge/docs-中文版-red.svg)](README.md)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Tech](https://img.shields.io/badge/stack-React_19_·_Vite_·_Tailwind-38bdf8)
 ![Privacy](https://img.shields.io/badge/privacy-Local_Storage_Only-green)
 
-**Xinhua Insight** is a client-side news intelligence dashboard designed to strip away the "positive energy" adjectives from official reports and reveal the underlying logic of policy, economy, and social control.
+**Xinhua Insight** is a client-side news intelligence dashboard designed to strip away decorative adjectives from official reports and reveal the underlying logic of policy, economy, and social dynamics.
 
 It combines real-time data crawling with Large Language Models (LLM) to act as your **"Deep Logic Decoder"**.
 
@@ -30,7 +30,7 @@ Due to browser Same-Origin Policy (SOP), direct access to news sites is blocked.
 
 ### 3. 📊 Local NLP
 *   **Tokenization**: Front-end based simple segmentation (N-gram).
-*   **Stop Words**: Automatically removes bureaucratic filler words (e.g., "Strengthen", "Promote", "Important") to isolate high-value nouns (e.g., "Security", "Risk", "Struggle").
+*   **Stop Words**: Automatically removes bureaucratic filler words (e.g., "Strengthen", "Promote", "Important") to isolate high-value nouns (e.g., "Security", "Risk", "Development").
 
 ---
 
@@ -41,10 +41,10 @@ We don't just summarize; we **interpret** through distinct personas:
 
 | Persona | Role & Focus |
 |---------|--------------|
-| 🗣️ **Plain Spoken (Recommended)** | **The Truth-Teller.** Translates "Fiscal Policy" into "Watch your wallet". Synthesizes politics and economics into simple, actionable advice for the average family. |
-| 🏃‍♂️ **Survivalist (Runxue)** | **The Alarmist.** Focuses on physical safety, border controls, supply chain shortages, and "Iron Fist" avoidance. |
-| 📉 **Bear Economist** | **The Skeptic.** Looks past GDP growth to see local debt crises, tax enforcement risks, and currency devaluation. |
-| 🕵️ **Political Observer** | **The Insider.** Analyzes personnel changes, meetings attended/absent, and ideological signaling (Zhongnanhai Watcher). |
+| 🗣️ **Plain Spoken (Recommended)** | **The Translator.** Translates "Fiscal Policy" into "Watch your wallet". Synthesizes politics and economics into simple, actionable advice for the average family. |
+| 🏃‍♂️ **Survivalist (Practical)** | **The Risk Analyst.** Focuses on physical safety, mobility, supply chain fluctuations, and regulatory compliance. |
+| 📉 **Macro Strategist** | **The Realist.** Looks past headline numbers to see debt cycles, tax enforcement risks, and asset value fluctuations. |
+| 🕵️ **Political Observer** | **The Analyst.** Analyzes personnel changes, meetings attended/absent, and terminological shifts to infer policy direction. |
 | 🎓 **Exam Prep (Civil Service)** | **The Standard Answer.** Treats news as essay material and exam points. Analyzes hiring trends based on department power shifts. |
 
 ### 🔒 Privacy First

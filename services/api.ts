@@ -1,15 +1,40 @@
-import { DashboardData, AIReport, ConfigStatus, APIConfig, ModelValidationResponse, PersonaId, BasicData, Article, WordStat } from '../types';
+
+import type { DashboardData, AIReport, ConfigStatus, APIConfig, ModelValidationResponse, PersonaId, Article, WordStat, DeepReport, SavedReport } from '../types';
+
+// 扩展 Intl 命名空间以支持 Segmenter
+declare global {
+  namespace Intl {
+    interface SegmenterOptions {
+      granularity?: 'grapheme' | 'word' | 'sentence';
+      localeMatcher?: 'best fit' | 'lookup';
+    }
+    interface SegmenterSegment {
+      segment: string;
+      index: number;
+      input: string;
+      isWordLike?: boolean;
+    }
+    class Segmenter {
+      constructor(locales?: string | string[], options?: SegmenterOptions);
+      segment(input: string): IterableIterator<SegmenterSegment>;
+    }
+  }
+}
 
 const LS_CONFIG_KEY = 'xinhua_insight_api_config';
 const LS_DATA_KEY = 'xinhua_insight_local_data';
+const LS_DOSSIER_KEY = 'xinhua_insight_dossier';
 
-// Xinhua Net Mobile (UTF-8 encoded)
 const TARGET_URL = 'https://m.news.cn/';
-// CORS Proxy to bypass browser restrictions
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-// --- Local Configuration Management ---
+const PROXY_GENERATORS = [
+  (url: string) => `https://cross.250221.xyz/?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`,
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`
+];
 
+// --- 本地存储助手 ---
 const getStoredConfig = (): APIConfig | null => {
   const stored = localStorage.getItem(LS_CONFIG_KEY);
   return stored ? JSON.parse(stored) : null;
@@ -18,8 +43,6 @@ const getStoredConfig = (): APIConfig | null => {
 const saveStoredConfig = (config: APIConfig) => {
   localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(config));
 };
-
-// --- Local Data Management (The Browser is now the Database) ---
 
 const getStoredData = (): DashboardData | null => {
   const stored = localStorage.getItem(LS_DATA_KEY);
@@ -30,31 +53,83 @@ const saveStoredData = (data: DashboardData) => {
   localStorage.setItem(LS_DATA_KEY, JSON.stringify(data));
 };
 
-// --- Helper for Dates ---
-const getTodayDate = () => {
-  return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+const getDossier = (): SavedReport[] => {
+  const stored = localStorage.getItem(LS_DOSSIER_KEY);
+  return stored ? JSON.parse(stored) : [];
 };
 
-// --- Client-Side Analysis Helpers ---
+const saveToDossier = (item: SavedReport): SavedReport[] => {
+  const current = getDossier();
+  const exists = current.find(r => r.article.url === item.article.url && r.persona === item.persona);
+  let updated = current;
+  if (exists) {
+      updated = current.map(r => (r.article.url === item.article.url && r.persona === item.persona) ? item : r);
+  } else {
+      updated = [item, ...current];
+  }
+  localStorage.setItem(LS_DOSSIER_KEY, JSON.stringify(updated));
+  return updated;
+};
+
+const deleteFromDossier = (id: string): SavedReport[] => {
+  const current = getDossier();
+  const updated = current.filter(r => r.id !== id);
+  localStorage.setItem(LS_DOSSIER_KEY, JSON.stringify(updated));
+  return updated;
+};
+
+const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+const HOT_WORDS_LIBRARY = [
+  "习近平新时代中国特色社会主义思想", "中华民族伟大复兴", "中国式现代化", "人类命运共同体", 
+  "全过程人民民主", "总体国家安全观", "两个维护", "四个意识", "四个自信", "高质量发展", 
+  "新发展理念", "新发展格局", "以人民为中心", "自我革命", "从严治党", "国家安全", 
+  "意识形态工作", "党对军队的绝对领导", "新时代", "绿水青山就是金山银山", 
+  "供给侧结构性改革", "科技自立自强", "关键核心技术", "新质生产力", "碳达峰缺口", 
+  "共同富裕", "乡村振兴", "一带一路", "数字中国", "实体经济", "低空经济", 
+  "未来产业", "双循环", "房住不炒", "六稳六保", "精准扶贫", "脱贫攻坚", 
+  "获得感", "讲好中国故事", "传承红色基因", "生命至上", "人民至上", 
+  "文化自信", "不忘初心", "牢记使命", "正能量", "主旋律", 
+  "基层治理", "扫黑除恶", "动态清零", "复工复产", "百年未有之大变局", 
+  "稳中求进", "踔厉奋发", "勇毅前行", "行稳致远", "深刻领悟", "全面深化"
+];
 
 const extractKeywords = (titles: string[]): WordStat[] => {
-  const stopWords = new Set(['中国', '工作', '强调', '指出', '会议', '活动', '关于', '进行', '加强', '推进', '发展', '人民', '重要', '精神', '甚至', '为了', '学习', '全面', '贯彻', '落实', '深入', '坚持']);
+  const stopWords = new Set([
+    '中国', '我国', '全国', '各地', '地方', '部门', '新华社', '记者', '新华时评', '快评', '中共中央', '国务院', '总书记',
+    '人民', '日报', '文章', '习近平', '工作', '强调', '指出', '会议', '活动', '进行', '召开', '举行', '发表', '考察', '调研', '签署', '会见',
+    '致电', '指示', '开展', '实施', '做好', '印发', '发布', '学习', '研究', '部署', '审议', '观看', '出席', 
+    '回信', '致信', '座谈', '主持', '坚持', '推进', '落实', '构建', '强化', '统筹', '协调', '贯彻', '抓好',
+    '关于', '加强', '发展', '重要', '精神', '全面', '深入', '为了', '甚至', '以及', '其中', '成为', '我们', '这个', '那个',
+    '扎实', '大力', '进一步', '不断', '切实', '坚决', '认真', '重大', '加快', '持续', '全力', 
+    '积极', '严格', '高效', '提升', '优化', '深化', '推动', '促进', '保障', 
+    '完善', '打造', '健全', '防范', '化解', '整治', '攀升', '开创', '奋力',
+    '情况', '问题', '主要', '水平', '能力', '体系', '机制', '任务', '举措', '成效', '项目', '成果', 
+    '行动', '篇章', '部分', '更多', '日前', '近日', '今年', '去年', '同期', '首月', '多地'
+  ]);
+  
   const frequency: Record<string, number> = {};
+  const sortedHotWords = [...HOT_WORDS_LIBRARY].sort((a, b) => b.length - a.length);
+
+  let segmenter: Intl.Segmenter;
+  try {
+    segmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' });
+  } catch (e) { return []; }
 
   titles.forEach(title => {
-    // Remove non-chinese characters
-    const cleanLine = title.replace(/[^\u4e00-\u9fa5]/g, '');
-    for (let i = 0; i < cleanLine.length - 1; i++) {
-      const word = cleanLine.substring(i, i + 2);
-      if (stopWords.has(word)) continue;
-      
-      frequency[word] = (frequency[word] || 0) + 1;
-    }
-    // Also try 3-grams
-    for (let i = 0; i < cleanLine.length - 2; i++) {
-        const word = cleanLine.substring(i, i + 3);
-        if (frequency[word.substring(0,2)] > 1) {
-             frequency[word] = (frequency[word] || 0) + 2; 
+    let cleanTitle = title.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, ' ');
+    sortedHotWords.forEach(hotWord => {
+      if (cleanTitle.includes(hotWord)) {
+        const regex = new RegExp(hotWord, 'g');
+        frequency[hotWord] = (frequency[hotWord] || 0) + (cleanTitle.match(regex) || []).length;
+        cleanTitle = cleanTitle.replace(regex, ' ');
+      }
+    });
+
+    const segments = segmenter.segment(cleanTitle);
+    for (const { segment, isWordLike } of segments) {
+        if (isWordLike && segment.length >= 2 && !stopWords.has(segment)) {
+            frequency[segment] = (frequency[segment] || 0) + 1;
         }
     }
   });
@@ -65,308 +140,249 @@ const extractKeywords = (titles: string[]): WordStat[] => {
     .slice(0, 15);
 };
 
-// --- Prompts ---
-
-const SYSTEM_PROMPT_BASE = `
-Role: You are a "Deep Logic Decoder" for Chinese political news. You do NOT trust the surface meaning of official "Baguwen" (bureaucratic formalism).
-Core Logic: "What is emphasized is what is lacking. What is repressed is what is feared."
-Task: Analyze the Xinhua Net headlines to find the *real* government intent and hidden crises.
-Methodology:
-1. Strip away "positive energy" adjectives.
-2. Link high-frequency keywords (e.g., "Security", "Struggle", "Stability") to specific underlying threats (e.g., economic collapse, social unrest, war preparation).
-3. The "Strategic Advice" must be cynical, realistic, and actionable for an individual trying to survive or profit in this environment.
-
-Output: Strict JSON format only. No Markdown.
-JSON Structure:
-{
-  "period_summary": "A concise, brutal summary of what the government is actually worrying about this week.",
-  "top_keywords": [{"word": "keyword", "weight": 90, "sentiment": "positive/neutral/negative"}],
-  "core_topics": [{"topic_name": "Topic", "summary": "The official narrative vs. the hidden reality."}],
-  "policy_signal": "Prediction of the next crackdown or policy shift based on tone intensity.",
-  "strategic_advice": {
-    "title": "Short, Punchy Advice",
-    "content": "Specific action: Buy/Sell/Hoard/Run/Lay low. No vague platitudes.",
-    "risk_level": "High/Medium/Low"
-  }
-}
-Force Simplified Chinese output for all values.
-`;
-
+// --- 解码视角系统 (全中文化优化) ---
 const PERSONA_INSTRUCTIONS: Record<PersonaId, string> = {
   youtuber: `
-    Perspective: "Modern Survivalist & Runxue (润学) Practitioner".
-    Focus: Physical safety, border controls, social instability, and wealth confiscation risks.
-    Tone: Alarmist but practical. Cynical.
-    Decoding Guide:
-    - "Social Stability" -> Prepare for increased surveillance and crackdowns.
-    - "Food Security" -> Hoard non-perishables; supply chains may break.
-    - "National Security" -> Passport controls might tighten; foreign exchange constraints.
-    - Advice Focus: Protecting yourself and your family from the "Iron Fist".
+    【当前角色】：现实生存专家 & 润学实践者
+    【核心视角】：剥离宏大叙事，关注个体生存。识别关于人身安全、供应链、边境管控、社会稳定的预警信号。
+    【解码逻辑】：官方强调“稳定”意味着有动荡风险；强调“保障供应”意味着可能出现短缺。请直接告诉用户是该储备物资、静观其变还是准备离开。
   `,
   economist: `
-    Perspective: "Bear Market Macro-Strategist".
-    Focus: Liquidity traps, local debt crises, tax enforcement, and capital flight.
-    Tone: Cold, calculating, data-driven skepticism.
-    Decoding Guide:
-    - "High-Quality Development" -> The old growth model is dead; expect stagnation.
-    - "Financial Risk Prevention" -> Small banks may fail; move cash to big 4 banks or hard assets.
-    - "Common Prosperity" -> Tax audits on the wealthy/middle class are coming.
-    - Advice Focus: Asset preservation, currency hedging, avoiding sectors in the crosshairs.
+    【当前角色】：防御性理财师 & 宏观空头分析师
+    【核心视角】：不看增长目标，看财政缺口、债务压力、私人部门活跃度及税收倒查风险。
+    【解码逻辑】：透视“逆周期调节”背后的财政焦虑，识别资产贬值和地方债雷区。重点关注资产保值和现金流安全，拒绝被乐观情绪误导。
   `,
   observer: `
-    Perspective: "Kremlinology / Zhongnanhai Watcher".
-    Focus: Power struggles, personnel changes, ideological purification, and mobilization for conflict.
-    Tone: Analytical, historical, reading between the lines.
-    Decoding Guide:
-    - Who is speaking? Who is missing from the headlines? (Absence is a signal).
-    - "Political Stance" -> Loyalty purges are active.
-    - "Struggle (斗争)" -> Preparation for external conflict or internal purge.
-    - Advice Focus: Understanding the political wind direction to avoid standing on the wrong side.
+    【当前角色】：时政深度观察员（中南海听床师）
+    【核心视角】：权力动态、意识形态转向、人事任免信号。
+    【解码逻辑】：通过“谁出席、谁缺席、提法变动”分析权力结构。注意新词替换旧词背后的路线调整。将看似平淡的会议通稿还原为激烈的路线抉择。
   `,
   plain_spoken: `
-    Perspective: "The Truth-Telling Neighbor (Big Vernacular)".
-    Focus: Synthesizing Economics, Politics, and Survival into simple terms for the average citizen.
-    Tone: "Speak Human Language" (说人话). Down-to-earth, slang-heavy, direct, slightly humorous but deadly serious about risks.
-    Decoding Guide:
-    - Translate "Fiscal Policy" to "The government is running out of money, watch your wallet."
-    - Translate "Security" to "Don't go out at night, don't talk online."
-    - Summarize complex risks into: "Save money," "Buy gold," "Don't buy a house," "Prepare for hard times."
-    - Advice Focus: Simple, actionable steps for a common family to survive the coming storm.
+    【当前角色】：大白话翻译官（你的隔壁邻居）
+    【核心视角】：将晦涩的黑话翻译成柴米油盐和工资。
+    【解码逻辑】：拒绝任何专业术语。直接告诉普通家庭：物价会涨吗？工作好找吗？孩子上学政策变了吗？用最直接的语言解释复杂的政策。
   `,
   exam_prep: `
-    Perspective: "Civil Service & Graduate Exam Mentor (Gongkao/Kaoyan)".
-    Focus: Identifying "Political Theory" exam points (政治考点), "Essay (Shenlun)" material (申论素材), and interpreting hiring trends based on policy weight.
-    Tone: Practical, encouraging, academic but realistic. Analyzes news as "Standard Answers" to be memorized.
-    Decoding Guide:
-    - Identify key slogans (e.g., "New Quality Productive Forces") -> Mark as "Must-Memorize Terms".
-    - "Strengthen X Dept" -> Suggest applying to X Department (it has budget and power).
-    - "Rectify Y Sector" -> Advise avoiding jobs in Y Sector.
-    - "Strategic Advice" Section: Provide specific essay structures or arguments derived from current news.
-    - "Risk Level": Interpret as "Competition Difficulty" or "Policy Change Risk".
-    - Advice Focus: How to use these topics in an exam answer, and which government agencies are rising in power (good for career).
+    【当前角色】：考公考研申论教练
+    【核心视角】：提取考点、标准提法、申论写作素材、行业扩招信号。
+    【解码逻辑】：识别核心意识形态主题。分析哪些政策领域将获得更多财政拨款，从而推断哪些岗位会有扩招；提炼必须背诵的关键词。
   `
 };
 
-// --- Helpers ---
+const SYSTEM_PROMPT_BASE = `
+你是一个名为“新华洞察”的深度逻辑解码专家。
+你的任务是刺破官方新闻通稿的“形式主义”，还原背后的“实质现实”。
+核心准则：强调什么就是缺什么，回避什么就是怕什么。
+输出规范：必须输出标准的 JSON 格式，严禁输出任何 Markdown 标记、Markdown 代码块或多余的解释文字。
+语言要求：必须使用简体中文。
+`;
+
+const GENERAL_REPORT_SCHEMA = `
+【总体分析 JSON 结构】：
+{
+  "general_analysis": {
+    "summary": "用一句话点透当前整体局势（红/黄/绿灯状态）。",
+    "keywords": [{"word": "关键词", "weight": 1-100, "sentiment": "positive|neutral|negative"}]
+  },
+  "situation_assessment": "解析当前宏观形势下的核心矛盾和政府的真实焦虑。",
+  "real_intent": "隐藏在政策背后的真实议图或尚未公开的行政动机。",
+  "avoidance_zone": {
+    "title": "风险规避领域名称",
+    "items": ["具体需要警惕的行业或行为列表"]
+  },
+  "action_suggestions": {
+    "title": "具体行动策略标题",
+    "content": "针对当前视角的具体建议（拒绝模棱两可的套话）。",
+    "risk_level": "High|Medium|Low"
+  }
+}
+`;
+
+const DEEP_REPORT_SCHEMA = `
+【单篇深度研判 JSON 结构】：
+{
+  "surface_meaning": "通稿的官方宣传摘要（1句话）。",
+  "deep_logic": "从你的特定视角出发，解读出的深层逻辑或真实意图。",
+  "impact_assessment": "此新闻对普通个体或特定行业的实质性后果评估。",
+  "key_segments": ["3句最能体现你分析结论的通稿原文原句"],
+  "bias_check": "语调分析：是防御性的？动员性的？还是警告性的？"
+}
+`;
 
 const cleanJson = (text: string): string => {
-  let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-  const start = cleaned.indexOf('{');
-  const end = cleaned.lastIndexOf('}');
-  if (start !== -1 && end !== -1) {
-    cleaned = cleaned.substring(start, end + 1);
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    return text.substring(start, end + 1);
   }
-  return cleaned;
+  return text.trim();
 };
 
-// --- API Implementation ---
+const fetchWithProxy = async (targetUrl: string): Promise<string | null> => {
+  for (const generateProxyUrl of PROXY_GENERATORS) {
+      try {
+        const fetchUrl = generateProxyUrl(targetUrl);
+        const response = await fetch(fetchUrl, {
+          cache: 'no-store',
+          headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+        });
+        if (!response.ok) continue;
+        const buffer = await response.arrayBuffer();
+        const decoder = new TextDecoder('utf-8'); 
+        const text = decoder.decode(buffer);
+        if (text && text.length > 200) return text;
+      } catch (e) { continue; }
+  }
+  return null;
+};
 
 export const api = {
-  getLatestData: async (): Promise<DashboardData | null> => {
-    // 1. Try to get from LocalStorage
-    const localData = getStoredData();
-    if (localData) {
-        return localData;
-    }
-    // 2. If nothing in local, return null to prompt the UI to "Crawl"
-    return null; 
-  },
+  getConfig: () => getStoredConfig(),
+  getLatestData: async () => getStoredData(),
+  getDossier,
+  saveToDossier,
+  deleteFromDossier,
 
   crawlNews: async (params?: { limit_hours?: number }): Promise<boolean> => {
-    try {
-      console.log(`Starting client-side crawl of ${TARGET_URL}...`);
-      
-      const response = await fetch(`${CORS_PROXY}${encodeURIComponent(TARGET_URL)}&t=${new Date().getTime()}`);
-      if (!response.ok) throw new Error("Proxy response failed");
+    const htmlText = await fetchWithProxy(TARGET_URL);
+    if (!htmlText) return false;
 
-      const buffer = await response.arrayBuffer();
-      const decoder = new TextDecoder('utf-8'); 
-      const htmlText = decoder.decode(buffer);
+    try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlText, 'text/html');
-
       const extractedArticles: Article[] = [];
-      const selectors = '.headline a, .swiper-slide .tit a, .list li a, .products li a';
+      const selectors = ['.headline a', '.swiper-slide .tit a', '.list li a', '.products li a', '#recommend li a'].join(', ');
       const linkElements = Array.from(doc.querySelectorAll(selectors));
-
       const today = getTodayDate();
 
       linkElements.forEach((el) => {
          const title = el.textContent?.trim();
          const href = el.getAttribute('href');
-         
          if (title && title.length > 6 && href && !href.includes('javascript:')) {
-             let fullUrl = href;
-             if (!href.startsWith('http')) {
-                 try {
-                     fullUrl = new URL(href, TARGET_URL).href;
-                 } catch (e) {
-                     return;
-                 }
-             }
-
-             // Attempt to extract date from URL 
-             let date = today; // Default to today if finding date fails
-             
-             let dateMatch = fullUrl.match(/\/(\d{4})(\d{2})(\d{2})\//);
-             if (!dateMatch) {
-                dateMatch = fullUrl.match(/\/(\d{4})\/(\d{2})(\d{2})\//);
-             }
-
-             if (dateMatch) {
-                 date = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
-             }
-
-             extractedArticles.push({
-                 title,
-                 url: fullUrl,
-                 date: date
-             });
+             let fullUrl = href.startsWith('http') ? href : new URL(href, TARGET_URL).href;
+             let date = today;
+             const dateMatch = fullUrl.match(/\/(\d{4})(\d{2})(\d{2})\//) || fullUrl.match(/\/(\d{4})\/(\d{2})(\d{2})\//);
+             if (dateMatch) date = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+             extractedArticles.push({ title, url: fullUrl, date });
          }
       });
 
       const uniqueArticles = Array.from(new Map(extractedArticles.map(item => [item.title, item])).values());
-      
-      if (uniqueArticles.length === 0) {
-          throw new Error("No articles found in parsed HTML");
-      }
-
-      // Sort by date descending
       uniqueArticles.sort((a, b) => b.date.localeCompare(a.date));
-
-      const topKeywords = extractKeywords(uniqueArticles.map(a => a.title));
-      
       const newData: DashboardData = {
           stats: {
-              date: getTodayDate(),
+              date: today,
               total_articles: uniqueArticles.length,
               last_updated: new Date().toLocaleTimeString(),
-              top_keywords: topKeywords
+              top_keywords: extractKeywords(uniqueArticles.map(a => a.title))
           },
-          articles: uniqueArticles.slice(0, 50) 
+          articles: uniqueArticles.slice(0, 50)
       };
-
       saveStoredData(newData);
       return true;
-
-    } catch (e) {
-      console.warn("Client-side crawl failed:", e);
-      return false;
-    }
+    } catch (e) { return false; }
   },
 
-  getConfigStatus: async (): Promise<ConfigStatus> => {
+  crawlArticleContent: async (url: string): Promise<string | null> => {
+    const htmlText = await fetchWithProxy(url);
+    if (!htmlText) return null;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+    const scripts = doc.querySelectorAll('script, style');
+    scripts.forEach(s => s.remove());
+    const selectors = ['#p-detail', '.main-content', '.content', 'article'];
+    let content = "";
+    for (const s of selectors) {
+        const el = doc.querySelector(s);
+        if (el?.textContent) { content = el.textContent; break; }
+    }
+    if (!content) content = doc.body.textContent || "";
+    return content.replace(/\s+/g, ' ').trim().slice(0, 4000);
+  },
+
+  getConfigStatus: async () => {
     const stored = getStoredConfig();
-    if (stored && stored.apiKey) {
-      return { configured: true, provider: stored.provider, modelId: stored.modelId };
-    }
-    return { configured: false };
+    return stored?.apiKey ? { configured: true, provider: stored.provider, modelId: stored.modelId } : { configured: false };
   },
 
-  validateConfig: async (config: { provider: string, apiKey: string, baseUrl?: string, modelId?: string }): Promise<ModelValidationResponse> => {
+  validateConfig: async (config: any): Promise<ModelValidationResponse> => {
     try {
-      const isOllama = config.provider === 'ollama';
-      let url = config.baseUrl;
-      if (!url) {
-        if (config.provider === 'openai') url = 'https://api.openai.com/v1';
-        if (config.provider === 'deepseek') url = 'https://api.deepseek.com';
-        if (isOllama) url = 'http://localhost:11434/v1';
-      }
-      
-      url = url?.replace(/\/+$/, '');
-
-      const payload = {
-        model: config.modelId,
-        messages: [
-          { role: "user", content: "Say 'Hello' in lower case." }
-        ],
-        max_tokens: 10
-      };
-
+      let url = config.baseUrl || (config.provider === 'openai' ? 'https://api.openai.com/v1' : (config.provider === 'deepseek' ? 'https://api.deepseek.com' : 'http://localhost:11434/v1'));
+      url = url.replace(/\/+$/, '');
       const res = await fetch(`${url}/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`
-        },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
+        body: JSON.stringify({ model: config.modelId, messages: [{ role: "user", content: "你好，请确认连接。" }], max_tokens: 20 })
       });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Provider Error (${res.status}): ${errText}`);
-      }
-
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content || "";
-
-      return { valid: true, models: [config.modelId || 'default'], message: "Connection Successful!", test_response: content };
-
-    } catch (e: any) {
-      console.error("Validation Error:", e);
-      return { valid: false, models: [], message: e.message || "Connection Failed" };
-    }
+      if (!res.ok) throw new Error(await res.text());
+      return { valid: true, models: [config.modelId], message: "连接成功！" };
+    } catch (e: any) { return { valid: false, models: [], message: e.message }; }
   },
 
-  updateConfig: async (config: APIConfig): Promise<boolean> => {
-    try {
-      saveStoredConfig(config);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  },
+  updateConfig: async (config: APIConfig) => { saveStoredConfig(config); return true; },
 
   analyzeAI: async (personaId: PersonaId, articles: Article[]): Promise<AIReport> => {
     const config = getStoredConfig();
-    if (!config) throw new Error("Configuration missing.");
-
-    // Truncate to save tokens (Use first 25 titles)
-    const recentArticles = articles.slice(0, 25).map(a => `- ${a.title}`).join('\n');
-    const userPrompt = `Here are the latest news titles from Xinhua Net:\n${recentArticles}`;
+    if (!config) throw new Error("配置缺失");
     
-    const isOllama = config.provider === 'ollama';
-    let url = config.baseUrl;
-    if (!url) {
-      if (config.provider === 'openai') url = 'https://api.openai.com/v1';
-      if (config.provider === 'deepseek') url = 'https://api.deepseek.com';
-      if (isOllama) url = 'http://localhost:11434/v1';
-    }
-    url = url?.replace(/\/+$/, '');
+    const personaPrompt = PERSONA_INSTRUCTIONS[personaId];
+    const userPrompt = `需要分析的最新标题列表：\n${articles.slice(0, 25).map(a => `- ${a.title}`).join('\n')}`;
+    
+    return await api.callLLM(config, [
+        { 
+          role: "system", 
+          content: `${SYSTEM_PROMPT_BASE}\n${GENERAL_REPORT_SCHEMA}\n【当前采用的解码视角】：${personaPrompt}` 
+        },
+        { role: "user", content: userPrompt }
+    ]);
+  },
+
+  analyzeDeepArticle: async (article: Article, content: string, personaId: PersonaId): Promise<DeepReport> => {
+    const config = getStoredConfig();
+    if (!config) throw new Error("配置缺失");
+    
+    const personaPrompt = PERSONA_INSTRUCTIONS[personaId];
+    const userPrompt = `请对以下文章进行深度研判：\n标题：${article.title}\n正文全文：${content}`;
+    
+    return await api.callLLM(config, [
+        { 
+          role: "system", 
+          content: `${SYSTEM_PROMPT_BASE}\n${DEEP_REPORT_SCHEMA}\n【当前采用的解码视角】：${personaPrompt}` 
+        },
+        { role: "user", content: userPrompt }
+    ]);
+  },
+
+  callLLM: async (config: APIConfig, messages: any[]): Promise<any> => {
+    let url = config.baseUrl || (config.provider === 'openai' ? 'https://api.openai.com/v1' : (config.provider === 'deepseek' ? 'https://api.deepseek.com' : 'http://localhost:11434/v1'));
+    url = url.replace(/\/+$/, '');
 
     try {
       const res = await fetch(`${url}/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
         body: JSON.stringify({
           model: config.modelId,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT_BASE + "\n" + PERSONA_INSTRUCTIONS[personaId] },
-            { role: "user", content: userPrompt }
-          ],
+          messages,
           temperature: 0.7,
-          response_format: { type: "json_object" }
+          response_format: config.provider !== 'ollama' ? { type: "json_object" } : undefined
         })
       });
-
+      
       if (!res.ok) {
-        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+        const errText = await res.text();
+        throw new Error(`API 错误 ${res.status}: ${errText}`);
       }
-
+      
       const data = await res.json();
       const rawContent = data.choices?.[0]?.message?.content;
+      if (!rawContent) throw new Error("AI 返回内容为空");
       
-      if (!rawContent) throw new Error("Empty response from AI");
-
-      const cleanedJson = cleanJson(rawContent);
-      return JSON.parse(cleanedJson);
-
-    } catch (e: any) {
-      console.error("AI Generation Error:", e);
-      throw new Error("Failed to generate report: " + e.message);
+      const cleaned = cleanJson(rawContent);
+      return JSON.parse(cleaned);
+    } catch (e: any) { 
+        console.error("AI 解码错误:", e);
+        throw e; 
     }
   }
 };

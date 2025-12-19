@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState } from 'react';
 import { Language } from '../types';
 
@@ -23,11 +24,40 @@ const translations: Record<Language, Translations> = {
     article_list_subtitle: "Direct sources from Xinhua Politics",
     read_source: "Read Source",
     ai_title: "Deep Logic Decoding",
-    ai_summary: "The Hidden Reality",
-    ai_policy: "Real Policy Direction",
-    ai_topics: "Narrative vs Reality",
-    ai_keywords: "Keyword Threat Levels",
-    ai_advice: "Strategic Survival Advice",
+    
+    // Deep Analysis
+    deep_analyze: "Deep Analyze",
+    analyzing_content: "Reading full text & analyzing...",
+    deep_report_title: "Confidential Dossier",
+    surface_meaning: "Surface Meaning",
+    deep_logic: "Deep Logic / Real Intent",
+    impact_assessment: "Impact Assessment",
+    bias_check: "Tone / Bias Check",
+    key_quotes: "Key Signals",
+    close: "Close Dossier",
+    save_to_dossier: "Save to Archives",
+    saved: "Saved!",
+
+    // Batch & Dossier
+    batch_mode: "Batch Mode",
+    batch_analyze_btn: "Batch Analyze Selected",
+    batch_confirm_msg: "Selected {count} articles.\nCurrent Perspective: 【{persona}】\n\nProceed with this perspective?\n(Click Cancel to select a different one)",
+    dossier: "Archives",
+    dossier_title: "Intelligence Archives",
+    dossier_empty: "No saved reports. Analyze articles and save them here.",
+    export_json: "Export JSON",
+    export_txt: "Export TXT",
+    delete: "Delete",
+    analyzing_batch: "Batch Analyzing... ({current}/{total})",
+    batch_complete: "Batch Analysis Complete! Saved to Archives.",
+
+    // New Section Titles
+    ai_section_general: "1. General Analysis",
+    ai_section_situation: "2. Situation Assessment",
+    ai_section_intent: "3. Real Intent",
+    ai_section_avoid: "4. Avoidance Zone",
+    ai_section_action: "5. Action Suggestions",
+
     ai_risk_level: "Risk Level",
     settings_title: "AI Configuration",
     provider: "Provider",
@@ -55,7 +85,8 @@ const translations: Record<Language, Translations> = {
     persona_plain_spoken_desc: "Translates expert jargon into plain language. Tells you exactly what to do at home.",
     persona_exam_prep: "Exam Prep (Civil Service)",
     persona_exam_prep_desc: "Extracts exam points and essay materials. Analyzes hiring trends based on policy focus.",
-    recommended: "Recommended"
+    recommended: "Recommended",
+    crawl_failed: "Crawler failed. The proxy might be busy. Please try again later."
   },
   zh: {
     appTitle: "新华洞察",
@@ -76,11 +107,40 @@ const translations: Record<Language, Translations> = {
     article_list_subtitle: "新华网时政频道直达",
     read_source: "阅读原文",
     ai_title: "深层逻辑解码",
-    ai_summary: "形势研判（去伪存真）",
-    ai_policy: "真实政策意图",
-    ai_topics: "表象 vs 真相",
-    ai_keywords: "关键词潜在意涵",
-    ai_advice: "生存与决策建议",
+
+    // Deep Analysis
+    deep_analyze: "深度研判",
+    analyzing_content: "正在抓取正文并进行穿透分析...",
+    deep_report_title: "单篇研判档案",
+    surface_meaning: "表面意思 (通稿摘要)",
+    deep_logic: "深层逻辑 (真实意图)",
+    impact_assessment: "实质影响评估",
+    bias_check: "语调/立场核查",
+    key_quotes: "关键信号原句",
+    close: "关闭档案",
+    save_to_dossier: "归档入库",
+    saved: "已归档",
+
+    // Batch & Dossier
+    batch_mode: "批量研判",
+    batch_analyze_btn: "批量研判所选 ({count})",
+    batch_confirm_msg: "已选择 {count} 篇文章。\n当前设定视角：【{persona}】\n\n是否保持该视角进行深度研判？\n(如需更换视角，请点击“取消”并在下方重新选择)",
+    dossier: "情报档案",
+    dossier_title: "情报研判档案库",
+    dossier_empty: "暂无归档。请对文章进行深度研判并保存。",
+    export_json: "导出 JSON",
+    export_txt: "导出 TXT",
+    delete: "删除",
+    analyzing_batch: "批量研判进行中... ({current}/{total})",
+    batch_complete: "批量研判完成！结果已自动归档。",
+
+    // New Section Titles
+    ai_section_general: "一、总体分析",
+    ai_section_situation: "二、形势研判",
+    ai_section_intent: "三、真实意图",
+    ai_section_avoid: "四、避雷专区",
+    ai_section_action: "五、行动建议",
+
     ai_risk_level: "风险等级",
     settings_title: "AI 配置",
     provider: "服务商",
@@ -108,7 +168,8 @@ const translations: Record<Language, Translations> = {
     persona_plain_spoken_desc: "拒绝谜语人。将专家黑话翻译成人话，直接告诉你现在该存钱还是该跑路。",
     persona_exam_prep: "考公考研 (上岸)",
     persona_exam_prep_desc: "提炼申论素材与政治考点。分析哪些部门在扩权招人，哪些行业适合避雷。",
-    recommended: "推荐：通俗易懂"
+    recommended: "推荐：通俗易懂",
+    crawl_failed: "爬虫运行失败。代理服务可能繁忙，请稍后重试。"
   },
   jp: {
     appTitle: "新華インサイト",
@@ -129,11 +190,40 @@ const translations: Record<Language, Translations> = {
     article_list_subtitle: "新華網政治セクション直リンク",
     read_source: "原文を読む",
     ai_title: "深層ロジック解読",
-    ai_summary: "隠された現実",
-    ai_policy: "真の政策意図",
-    ai_topics: "建前 vs 本音",
-    ai_keywords: "キーワードの意味",
-    ai_advice: "生存戦略アドバイス",
+
+    // Deep Analysis
+    deep_analyze: "詳細分析",
+    analyzing_content: "全文を取得して分析中...",
+    deep_report_title: "個別分析ファイル",
+    surface_meaning: "表面的な意味",
+    deep_logic: "深層ロジック (真の意図)",
+    impact_assessment: "影響評価",
+    bias_check: "トーン/バイアス確認",
+    key_quotes: "重要なシグナル",
+    close: "閉じる",
+    save_to_dossier: "アーカイブに保存",
+    saved: "保存しました",
+
+    // Batch & Dossier
+    batch_mode: "一括分析",
+    batch_analyze_btn: "選択項目を一括分析 ({count})",
+    batch_confirm_msg: "{count} 件の記事を選択しました。\n現在の視点：【{persona}】\n\nこの視点で分析を続けますか？\n(変更する場合は「キャンセル」をクリックして再選択してください)",
+    dossier: "情報アーカイブ",
+    dossier_title: "情報分析アーカイブ",
+    dossier_empty: "保存されたレポートはありません。記事を分析してここに保存してください。",
+    export_json: "JSONエクスポート",
+    export_txt: "TXTエクスポート",
+    delete: "削除",
+    analyzing_batch: "一括分析中... ({current}/{total})",
+    batch_complete: "一括分析完了！アーカイブに保存されました。",
+
+    // New Section Titles
+    ai_section_general: "1. 全体分析",
+    ai_section_situation: "2. 情勢判断",
+    ai_section_intent: "3. 真の意図",
+    ai_section_avoid: "4. 回避ゾーン",
+    ai_section_action: "5. 行動提案",
+
     ai_risk_level: "リスクレベル",
     settings_title: "AI 設定",
     provider: "プロバイダー",
@@ -161,7 +251,8 @@ const translations: Record<Language, Translations> = {
     persona_plain_spoken_desc: "専門用語を排除。結局何をすべきか（貯金、逃走、隠れる）を明確に伝えます。",
     persona_exam_prep: "公務員・大学院試験",
     persona_exam_prep_desc: "試験の重要ポイントと小論文の素材を抽出。政策の重点から採用トレンドを分析。",
-    recommended: "推奨：わかりやすい"
+    recommended: "推奨：わかりやすい",
+    crawl_failed: "クローラーが失敗しました。プロキシが混雑している可能性があります。"
   }
 };
 

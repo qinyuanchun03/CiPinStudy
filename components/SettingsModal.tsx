@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle, CheckCircle2, Wifi, Server, Terminal } from 'lucide-react';
 import { APIConfig } from '../types';
 import { api } from '../services/api';
@@ -21,6 +22,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
   const [loading, setLoading] = useState(false); // For saving
   const [testing, setTesting] = useState(false); // For validation
   const [testMessage, setTestMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  // Load configuration from local storage when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const currentConfig = api.getConfig();
+      if (currentConfig) {
+        setProvider(currentConfig.provider);
+        setApiKey(currentConfig.apiKey || '');
+        setBaseUrl(currentConfig.baseUrl || '');
+        setModelId(currentConfig.modelId || '');
+      }
+      setTestMessage(null); // Clear previous test results
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
