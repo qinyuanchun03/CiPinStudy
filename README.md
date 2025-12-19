@@ -1,77 +1,67 @@
-# 📰 新华洞察 (Xinhua Insight) v1.1
 
-> **读懂字里行间的趋势 | Decoding Bureaucratic Logic in Official Reports**
+# 📰 新华洞察 (Xinhua Insight) v1.2
+
+> **刺破政治修辞，还原实质现实 | Decoding Bureaucratic Logic with Hardcore Personas**
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-CiPinStudy-blue?logo=github)](https://github.com/qinyuanchun03/CiPinStudy)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fqinyuanchun03%2FCiPinStudy)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/qinyuanchun03/CiPinStudy)
-![Version](https://img.shields.io/badge/version-1.1.0-emerald.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-red.svg)
 ![Privacy](https://img.shields.io/badge/privacy-Local_Storage_Only-green)
+![Logic](https://img.shields.io/badge/logic-Hardcore_Decoding-orange)
 
-**新华洞察 (Xinhua Insight)** 是一款专为解构“八股文”设计的政经新闻深度研判工具。它不仅具备实时的本地分词统计功能，更通过大语言模型（LLM）穿透官方通稿的修饰性辞令，为用户提供五个不同维度的“逻辑解码”视图。
-
----
-
-## 🚀 最新版本 v1.1 更新记录
-
-### 1. 🧠 全中文化 Prompt 指令集
-针对中文政经语境进行了深度重构。所有 AI 提示词现已完全中文化，有效避免了 AI 在分析过程中输出长篇英文的问题。
-*   **术语穿透**: 精准识别“稳中求进”、“统筹安全”等关键词背后的真实政策温差。
-*   **逻辑对齐**: AI 现在能更敏锐地察觉通稿中“排位变动”和“避讳语”的政治含义。
-
-### 2. 🔍 单篇深度穿透 (Deep Analysis)
-支持对单篇文章进行“剥洋葱”式的深度研判：
-*   **表面摘要**: 提取通稿核心。
-*   **实质意图**: 结合选定人格（如生存专家或理财师）还原真相。
-*   **风险核查**: 自动分析文章的语调（是动员性的还是防御性的）。
-
-### 3. 📦 批量研判与情报归档 (Batch & Dossier)
-*   **批量研判**: 支持一次性勾选多篇文章进行自动化深度处理。
-*   **情报档案**: 分析结果可一键保存至本地“情报档案库”，支持 JSON 或 TXT 格式导出，方便二次编辑或撰写内参。
-
-### 4. ⚡ 性能与交互优化
-*   **本地分词**: 采用 `Intl.Segmenter` 算法，离线实现高效分词。
-*   **部署适配**: 完美支持 Vercel 和 Netlify 快速部署，代码即开即用。
+**新华洞察 (Xinhua Insight)** 是一款专为解构官方语境设计的政经新闻深度研判工具。v1.2 版本引入了更冷酷、更具穿透力的底层逻辑，通过五个经过深度工程化的 AI 视角，将“八股文”拆解为普通人能听懂的生存信号、投资指引与权力博弈。
 
 ---
 
-## 🤖 五大解码视角 (Persona System)
+## 🚀 v1.2 重大更新：全视角逻辑进化
 
-| 视角 | 核心逻辑 (Core Logic) |
-|------|----------------------|
-| 🗣️ **大白话 (推荐)** | **翻译官**。将政策术语翻译成“工资、菜价、房贷”等生活化建议。 |
-| 🏃‍♂️ **现实生存 (实用)** | **生存专家**。剥离宏大叙事，寻找关于安全、物资及流动性的预警信号。 |
-| 📉 **防御性理财 (空头)** | **财务分析师**。看透财政赤字，寻找税收、债务雷区及资产保值的最优解。 |
-| 🕵️ **政治观察员** | **听床师**。关注人事信号与话语体系微调，还原高层路线博弈。 |
-| 🎓 **考公考研 (上岸)** | **申论教练**。提取必须背诵的关键词和申论素材，判断行业岗位扩缩趋势。 |
+### 1. 🧠 理论底座升级
+本次升级不再仅仅停留在文字摘要，而是为不同的 AI 视角注入了硬核理论模型：
+*   **理财视角**：引入**奥地利学派（哈耶克/米塞斯）**、**达利欧《大债务危机》**模型，从资本效率（ROI）与流动性真相进行冷酷审计。
+*   **听床视角**：引入**克里姆林宫学（Kremlinology）**分析框架，通过“名单学”、提法微调及历史镜像（1959庐山会议、勃列日涅夫停滞等）透视权力博弈。
+*   **上岸视角**：全面转向**功利主义工具性**，将新闻纯粹视为“得分原材料”，提供分层（高分/保命）备考策略。
 
----
-
-## 🛠 技术架构
-
-*   **前端**: React 19 + Vite + Tailwind CSS + Lucide Icons。
-*   **数据采集**: 多路 CORS 代理（AllOrigins/ThingProxy）动态抓取新华网移动端数据。
-*   **AI 后端**: 支持 OpenAI、DeepSeek 以及本地部署的 Ollama。
-*   **隐私保护**: 所有 API Key 和研判报告均存储在浏览器 LocalStorage 中，不经过任何第三方服务器。
+### 2. 🔍 政治黑话穿透 (Terminological Surgery)
+AI 现在能精准识别并翻译通稿中的“政治暗码”：
+*   “经济韧性” -> 翻译：*“底层生存压力增加，流动性陷阱确认。”*
+*   “自我革命” -> 翻译：*“内部清洗常态化，权力结构正在重组。”*
+*   “灵活就业” -> 翻译：*“传统就业市场萎缩，出题人正在测试你对新就业形态的政治站位。”*
 
 ---
 
-## ⚙️ 配置与部署
+## 🤖 五大硬核解码视角 (Persona System)
 
-### 快速部署
-1. 点击上方的 **Deploy to Vercel** 或 **Netlify** 按钮。
-2. 填写您的 GitHub 仓库信息完成克隆。
-3. 在浏览器中打开应用，点击右上角 **设置 (⚙️)** 配置 API 密钥。
+| 视角 | 核心逻辑 (Core Logic) | 语调风格 (Tone) |
+|------|----------------------|----------------|
+| 🗣️ **白话解读** | **村头二叔视角**。将所有政策翻译成“自家账本”。关注这政策是往咱兜里塞钱，还是想掏咱存款。 | 愤世嫉俗、土味谚语、直接 |
+| 📊 **理财解读** | **冷酷宏观实用主义**。基于奥地利学派，只看资本回报率（ROI）与债务周期，拒绝所有意识形态杂音。 | 数学化、枯燥、极度避险 |
+| 🕵️ **听床解读** | **中南海星象家**。克里姆林宫学视角。关注排位、消失、提法变动，寻找权力斗争与路线转折的信号。 | 黑色幽默、历史控、犀利 |
+| 🎙️ **油管解读** | **独立时政评论员**。深度揭露宣传粉饰下的生存危机，预测特朗普2.0冲击与战时经济准备。 | 震惊体、逻辑驱动、警报性 |
+| 🎓 **上岸解读** | **功利主义教练**。得分机器。只看“标准提法”与“采分点”，提供三阶备考策略，拒绝任何个人观点。 | 结构化、技术性、鼓励 |
 
-### 仓库地址
-开源地址：[https://github.com/qinyuanchun03/CiPinStudy](https://github.com/qinyuanchun03/CiPinStudy)
+---
+
+## 🛠 功能亮点
+
+*   **情报档案库**: 支持单篇/批量深度研判，结果自动归档至本地，支持 JSON/TXT 导出。
+*   **本地分词**: 采用 `Intl.Segmenter` 算法，在浏览器端实现高效的时政关键词统计。
+*   **零配置跨域**: 内置多路动态代理，直接从新华网移动端抓取实时数据。
+*   **隐私至上**: 密钥与报告全本地存储，不经过任何第三方服务器，确保研判私密性。
+
+---
+
+## ⚙️ 配置指引
+
+1.  **Provider**: 支持 OpenAI、DeepSeek (推荐) 以及本地 Ollama。
+2.  **API Key**: 在设置中填入您的密钥（存储于 LocalStorage）。
+3.  **模型推荐**: 建议使用 `deepseek-reasoner` 或 `gpt-4o` 以获得最佳的穿透分析效果。
 
 ---
 
 ## ⚠️ 免责声明
-本工具仅供学术研究和信息汇总参考。AI 深度研判结果基于特定 Prompt 工程逻辑生成，旨在提供批判性思维视角，并不代表开发者观点，亦不构成任何投资或法律建议。
+本工具仅供批判性思维练习与学术研究参考。AI 生成的“解码”逻辑基于特定的 Prompt 工程，旨在提供一种非官方的解读视角，不代表开发者立场，亦不构成任何投资或法律建议。
 
 ---
 <p align="center">
+  Decoding Reality, Pixel by Pixel. <br/>
   Made with ❤️ by the Xinhua Insight Team
 </p>
