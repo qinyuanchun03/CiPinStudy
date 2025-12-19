@@ -15,7 +15,7 @@ export interface Article {
   title: string;
   url: string;
   date: string;
-  content?: string; // Optional as we might not display full content in list
+  content?: string;
 }
 
 export interface DashboardData {
@@ -35,8 +35,6 @@ export interface StrategicAdvice {
   risk_level: 'High' | 'Medium' | 'Low';
 }
 
-// New 5-Section Structure Types
-
 export interface GeneralAnalysis {
   summary: string;
   keywords: AIAnalysisKeyword[];
@@ -48,18 +46,11 @@ export interface AvoidanceZone {
 }
 
 export interface AIReport {
-  // 1. General Analysis (总体分析) - includes Visual Keywords
   general_analysis: GeneralAnalysis;
-  // 2. Situation Assessment (形势研判)
   situation_assessment: string;
-  // 3. Real Intent (真实意图)
   real_intent: string;
-  // 4. Avoidance Zone (避雷专区)
   avoidance_zone: AvoidanceZone;
-  // 5. Action Suggestions (行动建议)
   action_suggestions: StrategicAdvice;
-
-  // Legacy properties for backward compatibility
   period_summary?: string;
   top_keywords?: AIAnalysisKeyword[];
   policy_signal?: string;
@@ -71,8 +62,8 @@ export interface DeepReport {
   surface_meaning: string;
   deep_logic: string;
   impact_assessment: string;
-  key_segments: string[]; // Specific quotes from text that are important
-  bias_check: string; // Tone analysis
+  key_segments: string[];
+  bias_check: string;
 }
 
 export interface SavedReport {
@@ -88,6 +79,7 @@ export interface APIConfig {
   apiKey?: string;
   baseUrl?: string;
   modelId?: string;
+  customProxies?: string[]; // 新增：自定义代理列表
 }
 
 export interface ConfigStatus {
@@ -101,7 +93,7 @@ export type PersonaId = 'youtuber' | 'economist' | 'observer' | 'plain_spoken' |
 
 export interface ModelValidationResponse {
   valid: boolean;
-  models: string[]; // List of available model IDs
+  models: string[];
   message?: string;
-  test_response?: string; // Content of the short test request
+  test_response?: string;
 }
